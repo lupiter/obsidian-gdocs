@@ -1,94 +1,145 @@
-# Obsidian Sample Plugin
+# Google Docs Sync for Obsidian
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+Bidirectional sync between Obsidian folders and Google Docs. Each folder becomes a Google Doc with notes as sections.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+## Features
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+- 🔄 **Bidirectional sync** - Changes sync both ways
+- 📁 **Folder structure preserved** - Folders → headings, files → subheadings
+- 🎨 **Rich formatting** - Bold, italic, blockquotes, lists, headings
+- ⚡ **Smart conflict resolution** - Auto-merge when possible, manual when needed
+- 📱 **Mobile compatible** - Works on desktop and mobile
+- 🏗️ **Battle-tested libraries** - Uses `marked` and `gray-matter`
 
-## First time developing plugins?
+## Installation
 
-Quick starting guide for new plugin devs:
+> **Note**: This plugin is not yet published to the Community Plugins directory.
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+### Manual Install
 
-## Releasing new releases
+1. Download `main.js`, `manifest.json`, `styles.css` from [releases](https://github.com/cathy/obsidian-gdocs-sync/releases) (or build from source)
+2. Create folder: `.obsidian/plugins/obsidian-gdocs-sync/` in your vault
+3. Copy the three files into that folder
+4. Reload Obsidian
+5. Enable the plugin in **Settings → Community Plugins**
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+## Setup
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+### Get a Google API Key
 
-## Adding your plugin to the community plugin list
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a project
+3. Enable **Google Docs API** (APIs & Services → Library)
+4. Create credentials: **API Key** (APIs & Services → Credentials)
+5. Restrict key to Google Docs API only (recommended)
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+### Configure Plugin
 
-## How to use
+1. Open **Settings → Google Docs Sync**
+2. Paste your API key
+3. Click **Validate**
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+Done! 🎉
 
-## Manually installing the plugin
+## Usage
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+**Sync a folder:**
 
-## Improve code quality with eslint (optional)
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- To use eslint with this project, make sure to install eslint from terminal:
-  - `npm install -g eslint`
-- To use eslint to analyze this project use this command:
-  - `eslint main.ts`
-  - eslint will then create a report with suggestions for code improvement by file and line number.
-- If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
-  - `eslint ./src/`
+- Right-click folder → "Sync with Google Docs", OR
+- Command palette (`Cmd/Ctrl + P`) → "Sync current folder", OR
+- Click ribbon sync icon
 
-## Funding URL
+**First sync:** Creates a new Google Doc with the folder's name
 
-You can include funding URLs where people who use your plugin can financially support it.
+**Later syncs:** Pushes/pulls changes, or shows conflict resolution UI if both changed
 
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
+### Example
 
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
+```
+MyFolder/
+├── Introduction.md
+├── Chapter1/
+│   ├── Section1.md
+│   └── Section2.md
+└── Conclusion.md
 ```
 
-If you have multiple URLs, you can also do:
+Becomes a Google Doc with:
 
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
+- Introduction (Heading 2)
+- Chapter1 (Heading 2)
+  - Section1 (Heading 3)
+  - Section2 (Heading 3)
+- Conclusion (Heading 2)
+
+Files are ordered alphabetically.
+
+## Supported Markdown
+
+| Feature                               | Support     |
+| ------------------------------------- | ----------- |
+| Bold, italic, headings, lists, quotes | ✅ Full     |
+| Front matter (YAML/TOML/JSON)         | ✅ Stripped |
+| Links, images, code blocks, tables    | 🔜 Future   |
+
+## Troubleshooting
+
+**"API key is invalid"**
+
+- Check Google Docs API is enabled
+- Verify API key has no restrictions blocking it
+
+**"403 Forbidden"**
+
+- Free tier: 60 requests/min, 10,000/day
+- Check [quotas](https://console.cloud.google.com/apis/api/docs.googleapis.com/quotas)
+
+**Conflicts**
+
+- Edit both versions → plugin shows diff viewer
+- Choose local, remote, or cancel
+
+## Development
+
+```bash
+npm install        # Install dependencies
+npm run dev        # Watch mode
+npm run build      # Production build
+npm test           # Run tests
+npm run validate   # Lint + format + test + build
 ```
 
-## API Documentation
+**Quick test:**
 
-See https://github.com/obsidianmd/obsidian-api
+```bash
+npm run build
+cp main.js manifest.json styles.css ~/path/to/vault/.obsidian/plugins/obsidian-gdocs-sync/
+```
+
+Then enable in Obsidian → Settings → Community Plugins.
+
+## Privacy
+
+- API key stored locally (not synced)
+- Direct connection to Google (no third-party servers)
+- No telemetry or data collection
+- Recommend: Restrict API key to Google Docs API only
+
+## Limitations
+
+- API key auth only (OAuth planned)
+- Not real-time (on-demand or periodic sync)
+- Large folders may be slow
+- API quota limits apply
+
+## Contributing
+
+PRs welcome! Please run `npm run validate` before submitting.
+
+## License
+
+MIT
+
+---
+
+Built with [Obsidian API](https://docs.obsidian.md) • [Google Docs API](https://developers.google.com/docs/api) • [marked](https://marked.js.org/) • [gray-matter](https://github.com/jonschlinkert/gray-matter)

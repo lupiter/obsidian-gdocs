@@ -1,8 +1,199 @@
-/*
+/* Google Docs Sync Plugin Styles */
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+/* Sync Progress Modal */
+.gdocs-sync-modal {
+	padding: var(--size-4-4);
+	width: 100%;
+	max-width: min(400px, 90vw);
+}
 
-If your plugin does not need CSS, delete this file.
+/* Adjust for larger screens */
+@media (min-width: 480px) {
+	.gdocs-sync-modal {
+		min-width: 400px;
+	}
+}
 
-*/
+.gdocs-sync-status {
+	margin: var(--size-4-4) 0;
+	font-size: var(--font-ui-small);
+	color: var(--text-normal);
+}
+
+.gdocs-sync-progress {
+	width: 100%;
+	height: var(--size-4-6);
+	background: var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	overflow: hidden;
+	margin: var(--size-4-4) 0;
+}
+
+.gdocs-sync-progress-bar {
+	height: 100%;
+	background: var(--interactive-accent);
+	transition: width 0.3s ease;
+}
+
+.gdocs-sync-success {
+	color: var(--color-green);
+	font-weight: var(--font-semibold);
+	margin: var(--size-4-2) 0;
+}
+
+.gdocs-sync-error {
+	color: var(--color-red);
+	font-weight: var(--font-semibold);
+	margin: var(--size-4-2) 0;
+}
+
+.gdocs-sync-buttons {
+	display: flex;
+	justify-content: flex-end;
+	gap: var(--size-4-2);
+	margin-top: var(--size-4-4);
+}
+
+/* Diff Viewer Modal */
+.gdocs-diff-modal {
+	padding: var(--size-4-4);
+	width: 100%;
+	max-width: min(800px, 90vw);
+}
+
+/* Adjust for larger screens */
+@media (min-width: 768px) {
+	.gdocs-diff-modal {
+		min-width: 600px;
+	}
+}
+
+.gdocs-diff-description {
+	margin: var(--size-4-2) 0 var(--size-4-4);
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+}
+
+.gdocs-conflict {
+	margin: var(--size-4-4) 0;
+	padding: var(--size-4-3);
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+}
+
+.gdocs-conflict h3 {
+	margin-top: 0;
+	margin-bottom: var(--size-4-2);
+	color: var(--text-accent);
+	font-weight: var(--font-semibold);
+}
+
+.gdocs-diff-list {
+	list-style: none;
+	padding: 0;
+	margin: var(--size-4-2) 0;
+	font-family: var(--font-monospace);
+	font-size: var(--font-ui-smaller);
+}
+
+.gdocs-diff-list li {
+	padding: var(--size-2-3) var(--size-4-2);
+	margin: var(--size-2-1) 0;
+	border-left: 3px solid transparent;
+	border-radius: var(--radius-s);
+}
+
+.gdocs-diff-added {
+	background: var(--background-modifier-success);
+	border-left-color: var(--color-green);
+}
+
+.gdocs-diff-removed {
+	background: var(--background-modifier-error);
+	border-left-color: var(--color-red);
+}
+
+.gdocs-diff-modified {
+	background: var(--background-modifier-border-hover);
+	border-left-color: var(--color-orange);
+}
+
+.gdocs-diff-marker {
+	font-weight: var(--font-bold);
+	margin-right: var(--size-2-3);
+}
+
+.gdocs-diff-change {
+	margin-left: var(--size-4-4);
+	margin-top: var(--size-2-3);
+	font-size: var(--font-ui-smaller);
+}
+
+.gdocs-diff-old {
+	color: var(--color-red);
+	text-decoration: line-through;
+}
+
+.gdocs-diff-new {
+	color: var(--color-green);
+}
+
+.gdocs-diff-more {
+	color: var(--text-faint);
+	font-style: italic;
+	font-size: var(--font-ui-smaller);
+}
+
+.gdocs-diff-buttons {
+	display: flex;
+	justify-content: space-between;
+	gap: var(--size-4-2);
+	margin-top: var(--size-4-4);
+}
+
+/* Settings Tab */
+.gdocs-setup-instructions {
+	padding: var(--size-4-3);
+	background: var(--background-primary-alt);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	margin: var(--size-4-3) 0;
+}
+
+.gdocs-setup-instructions ol {
+	padding-left: var(--size-4-4);
+	margin: var(--size-4-2) 0;
+}
+
+.gdocs-setup-instructions li {
+	margin: var(--size-2-3) 0;
+}
+
+.gdocs-setup-instructions a {
+	color: var(--link-color);
+	text-decoration: var(--link-decoration);
+}
+
+.gdocs-setup-instructions a:hover {
+	color: var(--link-color-hover);
+	text-decoration: var(--link-decoration-hover);
+}
+
+.gdocs-note {
+	margin-top: var(--size-4-3);
+	padding: var(--size-4-2);
+	background: var(--background-modifier-message);
+	border-left: 3px solid var(--interactive-accent);
+	border-radius: var(--radius-s);
+	font-style: italic;
+	font-size: var(--font-ui-small);
+	color: var(--text-muted);
+}
+
+.gdocs-last-sync {
+	color: var(--text-faint);
+	font-size: var(--font-ui-small);
+	font-style: italic;
+	margin-top: var(--size-4-2);
+}

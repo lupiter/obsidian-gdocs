@@ -12,8 +12,10 @@ export interface SyncMetadata {
 	lastSyncTime: string;
 	/** Folder path relative to vault root */
 	folderPath: string;
-	/** Content hash for change detection */
+	/** Content hash for change detection (local) */
 	contentHash: string;
+	/** Content hash of remote document for change detection */
+	remoteContentHash?: string;
 	/** Google Doc revision ID for conflict detection */
 	revisionId?: string;
 }
@@ -52,8 +54,13 @@ export interface GoogleDocBody {
 
 export interface GoogleDocElement {
 	paragraph?: GoogleDocParagraph;
+	horizontalRule?: GoogleDocHorizontalRule;
 	startIndex?: number;
 	endIndex?: number;
+}
+
+export interface GoogleDocHorizontalRule {
+	// HorizontalRule has no properties in the API, it's just a marker
 }
 
 export interface GoogleDocParagraph {

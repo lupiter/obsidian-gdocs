@@ -1,6 +1,7 @@
 import { TFolder, TFile, Vault } from 'obsidian';
 import { FolderNode } from '../types';
 import matter from 'gray-matter';
+import { createHash } from 'crypto';
 
 const METADATA_FILENAME = '.sync-metadata.json';
 
@@ -129,6 +130,14 @@ export class FolderParser {
 		const hashArray = Array.from(new Uint8Array(hashBuffer));
 		const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 		return hashHex;
+	}
+
+	/**
+	 * Calculate hash of content (public for use in sync engine)
+	 * Synchronous version using Node's crypto for simplicity
+	 */
+	calculateContentHash(content: string): string {
+		return createHash('sha256').update(content).digest('hex');
 	}
 
 	/**

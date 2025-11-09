@@ -87,10 +87,23 @@ export class MetadataManager {
 	 */
 	async deleteMetadata(folder: TFolder): Promise<void> {
 		const metadataPath = this.getMetadataPath(folder);
-		const file = this.vault.getAbstractFileByPath(metadataPath);
-
-		if (file) {
-			await this.vault.delete(file);
+		
+		try {
+			// Check if file exists using adapter
+			// @ts-ignore - adapter.exists is available in Obsidian
+			const exists = await this.vault.adapter.exists(metadataPath);
+			
+			if (exists) {
+				// Delete using adapter for hidden files
+				// @ts-ignore - adapter.remove is available in Obsidian
+				await this.vault.adapter.remove(metadataPath);
+				console.log('Deleted metadata file:', metadataPath);
+			} else {
+				console.log('Metadata file does not exist:', metadataPath);
+			}
+		} catch (error) {
+			console.error('Failed to delete metadata:', error);
+			throw new Error(`Failed to delete metadata: ${error.message}`);
 		}
 	}
 

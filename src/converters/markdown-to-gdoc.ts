@@ -182,7 +182,7 @@ export class MarkdownToGoogleDocsConverter {
 	): { insertRequests: GoogleDocRequest[]; styleRequests: GoogleDocRequest[]; endIndex: number } {
 		const insertRequests: GoogleDocRequest[] = [];
 		const styleRequests: GoogleDocRequest[] = [];
-		const currentIndex = startIndex;
+		let currentIndex = startIndex;
 
 		switch (token.type) {
 			case 'paragraph':
@@ -201,6 +201,14 @@ export class MarkdownToGoogleDocsConverter {
 				const headingResult = this.processHeading(token as Tokens.Heading, currentIndex);
 				return headingResult;
 
+			case 'hr':
+				// Horizontal rule - insert as dashes (same as Markdown)
+				// The Google Docs API doesn't support insertHorizontalRule in batchUpdate
+				const hrText = '---\n';
+				insertRequests.push(this.api.createInsertTextRequest(hrText, currentIndex));
+				currentIndex += hrText.length;
+				return { insertRequests, styleRequests, endIndex: currentIndex };
+
 			case 'code':
 				// Skip code blocks for now (or could add as plain text)
 				return { insertRequests, styleRequests, endIndex: currentIndex };
@@ -209,10 +217,12 @@ export class MarkdownToGoogleDocsConverter {
 				// Add a newline for spacing
 				const spaceText = '\n';
 				insertRequests.push(this.api.createInsertTextRequest(spaceText, currentIndex));
-				return { insertRequests, styleRequests, endIndex: currentIndex + spaceText.length };
+				currentIndex += spaceText.length;
+				return { insertRequests, styleRequests, endIndex: currentIndex };
 
 			default:
 				// For other types, just add newline
+				console.log('Unknown token type:', token.type);
 				return { insertRequests, styleRequests, endIndex: currentIndex };
 		}
 	}

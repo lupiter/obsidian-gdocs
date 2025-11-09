@@ -13,12 +13,25 @@ export class GoogleDocsToMarkdownConverter {
 		}
 
 		const lines: string[] = [];
+		let previousWasHeading = false;
 
 		for (const element of doc.body.content) {
 			if (element.paragraph) {
 				const line = this.convertParagraph(element.paragraph);
-				if (line !== null) {
+				if (line !== null && line.trim() !== '') {
+					const isHeading = line.startsWith('#');
+					
+					// Add appropriate spacing
+					if (lines.length > 0) {
+						// Always add double newline before headings (except first line)
+						// Add double newline between paragraphs for proper Markdown spacing
+						if (isHeading || !previousWasHeading) {
+							lines.push('');
+						}
+					}
+					
 					lines.push(line);
+					previousWasHeading = isHeading;
 				}
 			}
 		}
@@ -61,6 +74,11 @@ export class GoogleDocsToMarkdownConverter {
 		// Remove trailing newlines from the text (we'll add them back consistently)
 		text = text.replace(/\n+$/, '');
 
+		// Check if this looks like a horizontal rule (line of dashes)
+		if (/^[-]{3,}$/.test(text.trim())) {
+			return '---';
+		}
+
 		// Check paragraph style for headings or special formatting
 		if (paragraph.paragraphStyle) {
 			const styleType = paragraph.paragraphStyle.namedStyleType;
@@ -90,6 +108,8 @@ export class GoogleDocsToMarkdownConverter {
 			return [];
 		}
 
+		console.log('Extracting structure from doc with', doc.body.content.length, 'elements');
+
 		const sections: Array<{ level: number; title: string; content: string }> = [];
 		let currentSection: { level: number; title: string; content: string } | null = null;
 
@@ -97,29 +117,37 @@ export class GoogleDocsToMarkdownConverter {
 			if (element.paragraph) {
 				const paragraph = element.paragraph;
 				const text = this.getParagraphText(paragraph);
+				const styleType = paragraph.paragraphStyle?.namedStyleType;
 
-				if (paragraph.paragraphStyle && paragraph.paragraphStyle.namedStyleType) {
-					const styleType = paragraph.paragraphStyle.namedStyleType;
+				console.log('Processing paragraph:', {
+					text: text.substring(0, 50),
+					styleType,
+					hasElements: !!paragraph.elements,
+					elementsCount: paragraph.elements?.length,
+				});
 
-					if (styleType.startsWith('HEADING_')) {
-						// Save previous section if exists
-						if (currentSection) {
-							sections.push(currentSection);
-						}
-
-						// Start new section
-						const level = parseInt(styleType.replace('HEADING_', ''));
-						currentSection = {
-							level,
-							title: text.trim(),
-							content: '',
-						};
+				if (styleType && styleType.startsWith('HEADING_')) {
+					// Save previous section if exists
+					if (currentSection) {
+						console.log('Saving section:', currentSection.title, 'with content length:', currentSection.content.length);
+						sections.push(currentSection);
 					}
-				} else if (currentSection) {
-					// Add content to current section
+
+					// Start new section
+					const level = parseInt(styleType.replace('HEADING_', ''));
+					currentSection = {
+						level,
+						title: text.trim(),
+						content: '',
+					};
+					console.log('Started new section:', currentSection.title, 'at level', level);
+				} else if (currentSection && text.trim() !== '') {
+					// Add content to current section (skip empty paragraphs)
 					const line = this.convertParagraph(paragraph);
 					if (line !== null && line.trim() !== '') {
-						currentSection.content += (currentSection.content ? '\n' : '') + line;
+						// Use double newline for Markdown paragraph separation
+						currentSection.content += (currentSection.content ? '\n\n' : '') + line;
+						console.log('Added content to section:', currentSection.title, '- line:', line.substring(0, 50));
 					}
 				}
 			}
@@ -127,9 +155,11 @@ export class GoogleDocsToMarkdownConverter {
 
 		// Add the last section
 		if (currentSection) {
+			console.log('Saving final section:', currentSection.title, 'with content length:', currentSection.content.length);
 			sections.push(currentSection);
 		}
 
+		console.log('Extracted', sections.length, 'sections');
 		return sections;
 	}
 

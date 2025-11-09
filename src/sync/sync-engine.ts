@@ -14,7 +14,7 @@ import { ConflictResolver } from './conflict-resolver';
 export class SyncEngine {
 	private api: GoogleDocsAPI | null = null;
 	private oauth: OAuth2Manager | null = null;
-	private metadataManager: MetadataManager;
+	public metadataManager: MetadataManager; // Public for access from commands
 	private folderParser: FolderParser;
 	private mdToGdoc: MarkdownToGoogleDocsConverter | null = null;
 	private gdocToMd: GoogleDocsToMarkdownConverter;
@@ -154,8 +154,11 @@ export class SyncEngine {
 			// Convert and upload content
 			await this.mdToGdoc.convertToGoogleDocs(folderTree, doc.documentId);
 
-			// Calculate content hash
+			// Calculate content hashes
 			const contentHash = await this.folderParser.calculateFolderHash(folder);
+			const updatedDoc = await this.api.getDocument(doc.documentId);
+			const remoteContent = this.gdocToMd.convertToMarkdown(updatedDoc);
+			const remoteHash = this.folderParser.calculateContentHash(remoteContent);
 
 			// Save metadata
 			await this.metadataManager.writeMetadata(folder, {
@@ -163,7 +166,8 @@ export class SyncEngine {
 				lastSyncTime: new Date().toISOString(),
 				folderPath: folder.path,
 				contentHash,
-				revisionId: doc.revisionId,
+				remoteContentHash: remoteHash,
+				revisionId: updatedDoc.revisionId,
 			});
 
 			return {
@@ -191,12 +195,32 @@ export class SyncEngine {
 				throw new Error('Metadata not found');
 			}
 
+			console.log('Syncing existing folder:', folder.path);
+			console.log('Metadata:', metadata);
+
 			// Get current local and remote content
 			const localHash = await this.folderParser.calculateFolderHash(folder);
 			const remoteDoc = await this.api.getDocument(metadata.googleDocId);
+			
+			// Calculate hash of remote content to detect changes
+			const remoteContent = this.gdocToMd.convertToMarkdown(remoteDoc);
+			const remoteHash = this.folderParser.calculateContentHash(remoteContent);
+
+			console.log('Local hash:', localHash);
+			console.log('Stored hash:', metadata.contentHash);
+			console.log('Remote hash:', remoteHash);
+			console.log('Remote revision:', remoteDoc.revisionId);
+			console.log('Stored revision:', metadata.revisionId);
 
 			const localChanged = localHash !== metadata.contentHash;
-			const remoteChanged = remoteDoc.revisionId !== metadata.revisionId;
+			// Check both revision ID and content hash for remote changes
+			const remoteChanged = 
+				remoteDoc.revisionId !== metadata.revisionId ||
+				!metadata.remoteContentHash ||
+				remoteHash !== metadata.remoteContentHash;
+
+			console.log('Local changed:', localChanged);
+			console.log('Remote changed:', remoteChanged);
 
 			if (!localChanged && !remoteChanged) {
 				return {
@@ -214,11 +238,14 @@ export class SyncEngine {
 
 			// One-way sync
 			if (localChanged) {
+				console.log('Pushing local changes to remote');
 				return await this.pushToRemote(folder, metadata);
 			} else {
-				return await this.pullFromRemote(folder, remoteDoc);
+				console.log('Pulling remote changes to local');
+				return await this.pullFromRemote(folder, remoteDoc, metadata, remoteHash);
 			}
 		} catch (error) {
+			console.error('Sync existing error:', error);
 			throw new Error(`Failed to sync existing: ${error.message}`);
 		}
 	}
@@ -241,11 +268,16 @@ export class SyncEngine {
 			// Update metadata
 			const newHash = await this.folderParser.calculateFolderHash(folder);
 			const updatedDoc = await this.api.getDocument(metadata.googleDocId);
+			
+			// Calculate hash of the remote content we just pushed
+			const remoteContent = this.gdocToMd.convertToMarkdown(updatedDoc);
+			const remoteHash = this.folderParser.calculateContentHash(remoteContent);
 
 			await this.metadataManager.writeMetadata(folder, {
 				...metadata,
 				lastSyncTime: new Date().toISOString(),
 				contentHash: newHash,
+				remoteContentHash: remoteHash,
 				revisionId: updatedDoc.revisionId,
 			});
 
@@ -263,23 +295,30 @@ export class SyncEngine {
 	/**
 	 * Pull remote changes from Google Docs
 	 */
-	private async pullFromRemote(folder: TFolder, remoteDoc: GoogleDoc): Promise<SyncResult> {
+	private async pullFromRemote(
+		folder: TFolder,
+		remoteDoc: GoogleDoc,
+		metadata: SyncMetadata,
+		remoteHash: string
+	): Promise<SyncResult> {
 		try {
+			console.log('Pulling from remote, document ID:', remoteDoc.documentId);
+			
 			const structure = this.gdocToMd.extractStructure(remoteDoc);
+			console.log('Extracted structure:', structure);
+			
 			await this.updateLocalFiles(folder, structure);
 
-			// Update metadata
-			const newHash = await this.folderParser.calculateFolderHash(folder);
-			const metadata = await this.metadataManager.readMetadata(folder);
+			// Update metadata with both local and remote hashes
+			const newLocalHash = await this.folderParser.calculateFolderHash(folder);
 
-			if (metadata) {
-				await this.metadataManager.writeMetadata(folder, {
-					...metadata,
-					lastSyncTime: new Date().toISOString(),
-					contentHash: newHash,
-					revisionId: remoteDoc.revisionId,
-				});
-			}
+			await this.metadataManager.writeMetadata(folder, {
+				...metadata,
+				lastSyncTime: new Date().toISOString(),
+				contentHash: newLocalHash,
+				remoteContentHash: remoteHash,
+				revisionId: remoteDoc.revisionId,
+			});
 
 			return {
 				success: true,
@@ -288,6 +327,7 @@ export class SyncEngine {
 				documentUrl: this.api?.getDocumentUrl(remoteDoc.documentId),
 			};
 		} catch (error) {
+			console.error('Pull from remote error:', error);
 			throw new Error(`Failed to pull from remote: ${error.message}`);
 		}
 	}
@@ -299,15 +339,25 @@ export class SyncEngine {
 		folder: TFolder,
 		structure: Array<{ level: number; title: string; content: string }>
 	): Promise<void> {
+		console.log('Updating local files with structure:', structure);
+		
 		for (const section of structure) {
-			if (section.content) {
+			// Only process level 2+ headings (level 1 is the folder itself)
+			if (section.level >= 2 && section.content) {
 				const fileName = `${section.title}.md`;
 				const filePath = `${folder.path}/${fileName}`;
+				
+				console.log(`Processing section: ${section.title} (level ${section.level})`);
+				console.log(`File path: ${filePath}`);
+				console.log(`Content length: ${section.content.length}`);
+				
 				const file = this.vault.getAbstractFileByPath(filePath);
 
 				if (file && file instanceof TFile) {
+					console.log(`Modifying existing file: ${filePath}`);
 					await this.vault.modify(file, section.content);
 				} else {
+					console.log(`Creating new file: ${filePath}`);
 					await this.vault.create(filePath, section.content);
 				}
 			}

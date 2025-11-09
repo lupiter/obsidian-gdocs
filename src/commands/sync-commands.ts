@@ -60,6 +60,16 @@ export class SyncCommands {
 					await this.syncFolder(folder);
 				})
 		);
+
+		// Add unlink option (will check if synced when clicked)
+		menu.addItem((item) =>
+			item
+				.setTitle('Unlink from Google Docs')
+				.setIcon('unlink')
+				.onClick(async () => {
+					await this.unlinkFolder(folder);
+				})
+		);
 	}
 
 	/**
@@ -190,6 +200,43 @@ export class SyncCommands {
 		} catch (error) {
 			console.error('Sync error:', error);
 			modal.showComplete(false, `Sync failed: ${error.message}`);
+		}
+	}
+
+	/**
+	 * Unlink a folder from Google Docs
+	 */
+	async unlinkFolder(folder: TFolder) {
+		try {
+			// Check if metadata exists
+			const hasMetadata = await this.syncEngine.metadataManager.hasMetadata(folder);
+			
+			if (!hasMetadata) {
+				new Notice(`"${folder.name}" is not linked to Google Docs`);
+				return;
+			}
+
+			// Get the metadata to show the Google Doc name
+			const metadata = await this.syncEngine.metadataManager.readMetadata(folder);
+			const docUrl = metadata?.googleDocId 
+				? `https://docs.google.com/document/d/${metadata.googleDocId}/edit`
+				: null;
+
+			// Delete the metadata file
+			await this.syncEngine.metadataManager.deleteMetadata(folder);
+
+			// Show success message
+			const message = `✓ Unlinked "${folder.name}" from Google Docs`;
+			new Notice(message);
+
+			if (docUrl) {
+				console.log(`Unlinked folder. Google Doc still exists at: ${docUrl}`);
+			}
+
+			console.log(`Deleted sync metadata for folder: ${folder.path}`);
+		} catch (error) {
+			console.error('Unlink error:', error);
+			new Notice(`✗ Failed to unlink: ${error.message}`);
 		}
 	}
 

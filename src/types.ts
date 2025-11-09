@@ -172,11 +172,27 @@ export interface BatchUpdateResponse {
 }
 
 /**
+ * OAuth2 token information
+ */
+export interface OAuth2Token {
+	/** Access token for API requests */
+	accessToken: string;
+	/** Token expiry time (Unix timestamp in milliseconds) */
+	expiresAt: number;
+}
+
+/**
  * Settings for the plugin
  */
 export interface GoogleDocsSettings {
-	/** Google API key */
-	apiKey: string;
+	/** OAuth2 Client ID from Google Cloud Console */
+	clientId: string;
+	/** OAuth2 Client Secret from Google Cloud Console */
+	clientSecret: string;
+	/** OAuth2 Refresh Token (generated once, used to get access tokens) */
+	refreshToken: string;
+	/** Current OAuth2 access token (auto-refreshed) */
+	accessToken?: OAuth2Token;
 	/** Whether to show hidden files (like .sync-metadata.json) */
 	showMetadataFiles: boolean;
 	/** Auto-sync interval in minutes (0 = disabled) */

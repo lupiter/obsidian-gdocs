@@ -14,7 +14,8 @@
 		"test": "jest",
 		"test:watch": "jest --watch",
 		"test:coverage": "jest --coverage",
-		"validate": "npm run lint && npm run format:check && npm run test && npm run build"
+		"validate": "npm run lint && npm run format:check && npm run test && npm run build",
+		"install:local": "npm run build && node scripts/install-local.mjs"
 	},
 	"keywords": [
 		"obsidian",

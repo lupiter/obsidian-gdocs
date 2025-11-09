@@ -25,21 +25,29 @@ Bidirectional sync between Obsidian folders and Google Docs. Each folder becomes
 
 ## Setup
 
-### Get a Google API Key
+### Get OAuth2 Credentials
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a project
+2. Create a new project (or select existing)
 3. Enable **Google Docs API** (APIs & Services → Library)
-4. Create credentials: **API Key** (APIs & Services → Credentials)
-5. Restrict key to Google Docs API only (recommended)
+4. Create credentials: **OAuth 2.0 Client ID** (APIs & Services → Credentials)
+5. Application type: **Desktop app**
+6. Copy the **Client ID** and **Client Secret**
 
-### Configure Plugin
+### Authorize the Plugin
 
-1. Open **Settings → Google Docs Sync**
-2. Paste your API key
-3. Click **Validate**
+**⚠️ Important: Authorization must be completed on desktop (Windows, Mac, or Linux). The OAuth flow does not work on mobile devices.**
 
-Done! 🎉
+1. Open **Settings → Google Docs Sync** on your desktop
+2. Paste your **Client ID** and **Client Secret**
+3. Click **Authorize** - this will open your browser
+4. Sign in with Google and authorize the app
+5. The authorization will complete automatically
+6. Click **Test** to verify
+
+Once authorized on desktop, your tokens will sync to mobile devices via Obsidian Sync (if enabled), and the plugin will work on mobile.
+
+Done! 🎉 The plugin will automatically refresh access tokens as needed.
 
 ## Usage
 
@@ -84,10 +92,16 @@ Files are ordered alphabetically.
 
 ## Troubleshooting
 
-**"API key is invalid"**
+**"Please enter credentials in settings"**
 
-- Check Google Docs API is enabled
-- Verify API key has no restrictions blocking it
+- Follow the setup steps above to get your OAuth2 credentials
+- Make sure you've clicked "Authorize" and completed the OAuth flow
+
+**"Authorization failed"**
+
+- Double-check your Client ID and Client Secret
+- Make sure you copied the full authorization code from the browser
+- Try authorizing again
 
 **"403 Forbidden"**
 
@@ -120,14 +134,14 @@ Then enable in Obsidian → Settings → Community Plugins.
 
 ## Privacy
 
-- API key stored locally (not synced)
+- OAuth credentials stored locally (not synced)
 - Direct connection to Google (no third-party servers)
 - No telemetry or data collection
-- Recommend: Restrict API key to Google Docs API only
+- Access tokens auto-refresh
 
 ## Limitations
 
-- API key auth only (OAuth planned)
+- OAuth2 authentication required
 - Not real-time (on-demand or periodic sync)
 - Large folders may be slow
 - API quota limits apply

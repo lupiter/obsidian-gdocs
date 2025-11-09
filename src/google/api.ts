@@ -4,31 +4,45 @@ import {
 	BatchUpdateResponse,
 	GoogleDocParagraphStyle,
 	GoogleDocTextStyle,
+	OAuth2Token,
 } from '../types';
+import { OAuth2Manager } from './oauth';
 
 /**
- * Google Docs API client using direct REST API calls
+ * Google Docs API client using OAuth2 authentication
  */
 export class GoogleDocsAPI {
-	private apiKey: string;
+	private accessToken: string;
 	private baseUrl = 'https://docs.googleapis.com/v1';
 
-	constructor(apiKey: string) {
-		this.apiKey = apiKey;
+	constructor(
+		accessToken: string,
+		private oauth?: OAuth2Manager
+	) {
+		this.accessToken = accessToken;
 	}
 
 	/**
-	 * Validate API key by making a test request
+	 * Update the access token (after refresh)
 	 */
-	async validateApiKey(): Promise<boolean> {
+	setAccessToken(token: string): void {
+		this.accessToken = token;
+	}
+
+	/**
+	 * Validate OAuth token by making a test request
+	 */
+	async validateToken(): Promise<boolean> {
 		try {
-			// Try to list accessible documents (will fail if key is invalid)
-			const response = await fetch(`${this.baseUrl}/documents?key=${this.apiKey}`, {
-				method: 'GET',
-				headers: { 'Content-Type': 'application/json' },
-			});
-			return response.ok;
-		} catch {
+			// Create a temporary test document to validate the token
+			const testDoc = await this.createDocument('OAuth Token Validation Test');
+
+			// If we successfully created a document, the token is valid
+			// Note: The test document will remain in the user's Google Drive
+			// but they can delete it manually if desired
+			return !!testDoc.documentId;
+		} catch (error) {
+			console.error('Token validation error:', error);
 			return false;
 		}
 	}
@@ -37,9 +51,12 @@ export class GoogleDocsAPI {
 	 * Create a new Google Doc
 	 */
 	async createDocument(title: string): Promise<GoogleDoc> {
-		const response = await fetch(`${this.baseUrl}/documents?key=${this.apiKey}`, {
+		const response = await fetch(`${this.baseUrl}/documents`, {
 			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${this.accessToken}`,
+			},
 			body: JSON.stringify({ title }),
 		});
 
@@ -56,9 +73,12 @@ export class GoogleDocsAPI {
 	 * Get a Google Doc by ID
 	 */
 	async getDocument(documentId: string): Promise<GoogleDoc> {
-		const response = await fetch(`${this.baseUrl}/documents/${documentId}?key=${this.apiKey}`, {
+		const response = await fetch(`${this.baseUrl}/documents/${documentId}`, {
 			method: 'GET',
-			headers: { 'Content-Type': 'application/json' },
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${this.accessToken}`,
+			},
 		});
 
 		if (!response.ok) {
@@ -77,14 +97,14 @@ export class GoogleDocsAPI {
 		documentId: string,
 		requests: GoogleDocRequest[]
 	): Promise<BatchUpdateResponse> {
-		const response = await fetch(
-			`${this.baseUrl}/documents/${documentId}:batchUpdate?key=${this.apiKey}`,
-			{
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ requests }),
-			}
-		);
+		const response = await fetch(`${this.baseUrl}/documents/${documentId}:batchUpdate`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${this.accessToken}`,
+			},
+			body: JSON.stringify({ requests }),
+		});
 
 		if (!response.ok) {
 			const error = await response.text();

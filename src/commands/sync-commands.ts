@@ -87,9 +87,9 @@ export class SyncCommands {
 	 * Sync all folders that have metadata
 	 */
 	async syncAllFolders(silent = false) {
-		if (!this.settings.apiKey) {
+		if (!this.settings.refreshToken) {
 			if (!silent) {
-				new Notice('Please configure your Google API key in settings');
+				new Notice('Please enter credentials in settings');
 			}
 			return;
 		}
@@ -134,9 +134,9 @@ export class SyncCommands {
 	 * Sync a specific folder
 	 */
 	async syncFolder(folder: TFolder) {
-		// Check for API key
-		if (!this.settings.apiKey) {
-			new Notice('Please configure your Google API key in settings');
+		// Check for credentials
+		if (!this.settings.refreshToken) {
+			new Notice('Please enter credentials in settings');
 			return;
 		}
 

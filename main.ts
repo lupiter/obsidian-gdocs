@@ -84,7 +84,7 @@ export default class GoogleDocsPlugin extends Plugin {
 
 		// Update sync engine with new settings
 		if (this.syncEngine) {
-			this.syncEngine.updateApiKey(this.settings.apiKey);
+			this.syncEngine.updateSettings(this.settings);
 		}
 	}
 

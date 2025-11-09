@@ -1,4 +1,4 @@
-import { App, Modal } from 'obsidian';
+import { App, Modal, Setting } from 'obsidian';
 
 /**
  * Modal to show sync progress
@@ -9,14 +9,13 @@ export class SyncProgressModal extends Modal {
 
 	constructor(app: App) {
 		super(app);
+		this.setTitle('Syncing with Google Docs');
 	}
 
 	onOpen(): void {
 		const { contentEl } = this;
 		contentEl.empty();
 		contentEl.addClass('gdocs-sync-modal');
-
-		contentEl.createEl('h2', { text: 'Syncing with Google Docs' });
 
 		this.statusEl = contentEl.createEl('p', {
 			text: 'Initializing sync...',
@@ -69,12 +68,19 @@ export class SyncProgressModal extends Modal {
 				cls: 'gdocs-sync-success',
 			});
 
+			// Use Setting for the link
 			if (documentUrl) {
-				const linkEl = contentEl.createEl('a', {
-					text: 'Open in Google Docs',
-					href: documentUrl,
-				});
-				linkEl.setAttribute('target', '_blank');
+				new Setting(contentEl)
+					.setName('View document')
+					.setDesc('Open the synced document in Google Docs')
+					.addButton((button) =>
+						button
+							.setButtonText('Open in Google Docs')
+							.setCta()
+							.onClick(() => {
+								window.open(documentUrl, '_blank');
+							})
+					);
 			}
 		} else {
 			contentEl.createEl('p', {
@@ -83,12 +89,12 @@ export class SyncProgressModal extends Modal {
 			});
 		}
 
-		// Add close button
-		const buttonDiv = contentEl.createEl('div', { cls: 'gdocs-sync-buttons' });
-		const closeButton = buttonDiv.createEl('button', { text: 'Close' });
-		closeButton.addEventListener('click', () => {
-			this.close();
-		});
+		// Use Setting for the close button
+		new Setting(contentEl).addButton((button) =>
+			button.setButtonText('Close').onClick(() => {
+				this.close();
+			})
+		);
 	}
 
 	onClose(): void {

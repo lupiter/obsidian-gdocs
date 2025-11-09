@@ -4,14 +4,6 @@
 .gdocs-sync-modal {
 	padding: var(--size-4-4);
 	width: 100%;
-	max-width: min(400px, 90vw);
-}
-
-/* Adjust for larger screens */
-@media (min-width: 480px) {
-	.gdocs-sync-modal {
-		min-width: 400px;
-	}
 }
 
 .gdocs-sync-status {

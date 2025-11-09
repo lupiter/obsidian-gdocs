@@ -128,14 +128,15 @@ export class GoogleDocsAPI {
 			endIndex = lastElement.endIndex || 1;
 		}
 
-		// Delete all content except the required trailing newline
-		if (endIndex > 1) {
+		// Only delete if there's content to delete (endIndex > 2 means there's more than just the trailing newline)
+		// Google Docs always has at least index 1 (the required trailing newline)
+		if (endIndex > 2) {
 			await this.batchUpdate(documentId, [
 				{
 					deleteContentRange: {
 						range: {
 							startIndex: 1,
-							endIndex: endIndex - 1,
+							endIndex: endIndex - 1, // Keep the trailing newline
 						},
 					},
 				},

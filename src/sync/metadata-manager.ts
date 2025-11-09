@@ -21,8 +21,15 @@ export class MetadataManager {
 	 */
 	async hasMetadata(folder: TFolder): Promise<boolean> {
 		const metadataPath = this.getMetadataPath(folder);
-		const file = this.vault.getAbstractFileByPath(metadataPath);
-		return file !== null;
+		
+		try {
+			// Use adapter.exists to check for hidden files
+			// @ts-ignore - adapter.exists is available in Obsidian
+			const exists = await this.vault.adapter.exists(metadataPath);
+			return exists;
+		} catch (error) {
+			return false;
+		}
 	}
 
 	/**
@@ -30,18 +37,15 @@ export class MetadataManager {
 	 */
 	async readMetadata(folder: TFolder): Promise<SyncMetadata | null> {
 		const metadataPath = this.getMetadataPath(folder);
-		const file = this.vault.getAbstractFileByPath(metadataPath);
-
-		if (!file || !(file instanceof TFile)) {
-			return null;
-		}
-
+		
 		try {
-			const content = await this.vault.read(file);
+			// Try reading directly with adapter for hidden files
+			// @ts-ignore - adapter.read is available in Obsidian
+			const content = await this.vault.adapter.read(metadataPath);
 			const metadata = JSON.parse(content) as SyncMetadata;
 			return metadata;
 		} catch (error) {
-			console.error('Failed to read metadata:', error);
+			// File doesn't exist or can't be read
 			return null;
 		}
 	}
@@ -51,16 +55,30 @@ export class MetadataManager {
 	 */
 	async writeMetadata(folder: TFolder, metadata: SyncMetadata): Promise<void> {
 		const metadataPath = this.getMetadataPath(folder);
-		const file = this.vault.getAbstractFileByPath(metadataPath);
-
 		const content = JSON.stringify(metadata, null, 2);
 
-		if (file && file instanceof TFile) {
-			// Update existing file
-			await this.vault.modify(file, content);
-		} else {
-			// Create new file
-			await this.vault.create(metadataPath, content);
+		try {
+			// Try to read the file directly using adapter to check if it exists
+			// @ts-ignore - adapter.exists is available in Obsidian
+			const exists = await this.vault.adapter.exists(metadataPath);
+			
+			if (exists) {
+				// File exists, write to it directly using adapter
+				// @ts-ignore - adapter.write is available in Obsidian
+				await this.vault.adapter.write(metadataPath, content);
+			} else {
+				// File doesn't exist, try to create it
+				try {
+					await this.vault.create(metadataPath, content);
+				} catch (createError) {
+					// If create fails, file might have appeared - write using adapter
+					// @ts-ignore
+					await this.vault.adapter.write(metadataPath, content);
+				}
+			}
+		} catch (error) {
+			console.error('Failed to write metadata:', error);
+			throw new Error(`Failed to write metadata: ${error.message}`);
 		}
 	}
 

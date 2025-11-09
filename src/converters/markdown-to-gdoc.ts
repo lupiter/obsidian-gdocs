@@ -359,7 +359,7 @@ export class MarkdownToGoogleDocsConverter {
 
 			switch (token.type) {
 				case 'text':
-					text += (token as Tokens.Text).text;
+					text += this.decodeHtmlEntities((token as Tokens.Text).text);
 					break;
 
 				case 'strong':
@@ -406,7 +406,7 @@ export class MarkdownToGoogleDocsConverter {
 
 				case 'codespan':
 					const codeToken = token as Tokens.Codespan;
-					text += codeToken.text;
+					text += this.decodeHtmlEntities(codeToken.text);
 					// Could add monospace style here if desired
 					break;
 
@@ -425,12 +425,40 @@ export class MarkdownToGoogleDocsConverter {
 				default:
 					// For other inline types, try to get text if available
 					if ('text' in token && typeof (token as { text?: unknown }).text === 'string') {
-						text += (token as { text: string }).text;
+						text += this.decodeHtmlEntities((token as { text: string }).text);
 					}
 					break;
 			}
 		}
 
 		return { text, styles };
+	}
+
+	/**
+	 * Decode HTML entities (like &#39; to ')
+	 */
+	private decodeHtmlEntities(text: string): string {
+		const entities: Record<string, string> = {
+			'&amp;': '&',
+			'&lt;': '<',
+			'&gt;': '>',
+			'&quot;': '"',
+			'&#39;': "'",
+			'&apos;': "'",
+		};
+
+		// Replace named entities
+		let decoded = text;
+		for (const [entity, char] of Object.entries(entities)) {
+			decoded = decoded.replace(new RegExp(entity, 'g'), char);
+		}
+
+		// Replace numeric entities (&#39;, &#x27;)
+		decoded = decoded.replace(/&#(\d+);/g, (_, code) => String.fromCharCode(parseInt(code, 10)));
+		decoded = decoded.replace(/&#x([0-9a-f]+);/gi, (_, code) =>
+			String.fromCharCode(parseInt(code, 16))
+		);
+
+		return decoded;
 	}
 }

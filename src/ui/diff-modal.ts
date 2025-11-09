@@ -1,4 +1,4 @@
-import { App, Modal } from 'obsidian';
+import { App, Modal, Setting } from 'obsidian';
 import { ConflictInfo } from '../types';
 import { ConflictResolver } from '../sync/conflict-resolver';
 
@@ -17,14 +17,13 @@ export class DiffViewerModal extends Modal {
 		super(app);
 		this.conflictResolver = new ConflictResolver();
 		this.onResolve = onResolve;
+		this.setTitle('Sync Conflicts Detected');
 	}
 
 	onOpen(): void {
 		const { contentEl } = this;
 		contentEl.empty();
 		contentEl.addClass('gdocs-diff-modal');
-
-		contentEl.createEl('h2', { text: 'Sync Conflicts Detected' });
 
 		contentEl.createEl('p', {
 			text: 'Changes have been made both locally and remotely. Please choose which version to keep:',
@@ -36,33 +35,31 @@ export class DiffViewerModal extends Modal {
 			this.renderConflict(contentEl, conflict);
 		}
 
-		// Action buttons
-		const buttonDiv = contentEl.createEl('div', { cls: 'gdocs-diff-buttons' });
-
-		const localButton = buttonDiv.createEl('button', {
-			text: 'Keep Local Version',
-			cls: 'mod-cta',
-		});
-		localButton.addEventListener('click', () => {
-			this.onResolve('local');
-			this.close();
-		});
-
-		const remoteButton = buttonDiv.createEl('button', {
-			text: 'Keep Remote Version',
-		});
-		remoteButton.addEventListener('click', () => {
-			this.onResolve('remote');
-			this.close();
-		});
-
-		const cancelButton = buttonDiv.createEl('button', {
-			text: 'Cancel Sync',
-		});
-		cancelButton.addEventListener('click', () => {
-			this.onResolve('cancel');
-			this.close();
-		});
+		// Use Setting for action buttons
+		new Setting(contentEl)
+			.setName('Choose version')
+			.setDesc('Select which version to keep for the sync')
+			.addButton((button) =>
+				button
+					.setButtonText('Keep Local Version')
+					.setCta()
+					.onClick(() => {
+						this.onResolve('local');
+						this.close();
+					})
+			)
+			.addButton((button) =>
+				button.setButtonText('Keep Remote Version').onClick(() => {
+					this.onResolve('remote');
+					this.close();
+				})
+			)
+			.addButton((button) =>
+				button.setButtonText('Cancel').onClick(() => {
+					this.onResolve('cancel');
+					this.close();
+				})
+			);
 	}
 
 	/**
